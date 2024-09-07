@@ -1,13 +1,14 @@
 package uz.akbar.masterx;
 
-import org.checkerframework.checker.units.qual.s;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+
+import uz.akbar.masterx.entity.User;
+import uz.akbar.masterx.enums.Profile;
+import uz.akbar.masterx.repository.UserRepository;
 
 /**
  * BotController
@@ -21,17 +22,23 @@ public class BotController {
 	@Autowired
 	BotService service;
 
+	@Autowired
+	UserRepository userRepository;
+
 	public void handleUpdate(Update update, TelegramClient client) {
+
+		String firstName = update.getMessage().getChat().getFirstName();
+		String lastName = update.getMessage().getChat().getLastName();
+		String username = update.getMessage().getChat().getUserName();
+		Long tgId = update.getMessage().getChat().getId();
+		Long chatId = update.getMessage().getChatId();
 
 		if (update.hasMessage()) {
 
+			// For text messages
 			if (update.getMessage().hasText()) {
 
 				String messageText = update.getMessage().getText();
-				long chatId = update.getMessage().getChatId();
-				String userFirstName = update.getMessage().getChat().getFirstName();
-				String userUsername = update.getMessage().getChat().getUserName();
-				long userId = update.getMessage().getChat().getId();
 
 				SendMessage message = SendMessage
 						.builder()
@@ -41,11 +48,11 @@ public class BotController {
 
 				switch (messageText) {
 					case "/start":
-						message = service.handleStart(chatId, userFirstName);
+						message = service.handleStart(chatId, firstName);
 						break;
 				}
 
-				logger.log(userFirstName, userUsername, Long.toString(userId), messageText, message.getText());
+				logger.log(firstName, username, Long.toString(tgId), messageText, message.getText());
 
 				try {
 					client.execute(message);
@@ -55,34 +62,69 @@ public class BotController {
 
 			}
 
+			// For sharing Contact
 			if (update.getMessage().hasContact()) {
 
-				Contact contact = update.getMessage().getContact();
-				Long chatId = update.getMessage().getChatId();
+				String phoneNumber = update.getMessage().getContact().getPhoneNumber();
 
-				String firstName = contact.getFirstName(); // required
-				String lastName = contact.getLastName(); // optional
-				String username = update.getMessage().getChat().getUserName(); // Akbar_Ahmad
-				String phoneNumber = contact.getPhoneNumber(); // +998945060749
-				Long tgId = contact.getUserId() != null ? contact.getUserId() : chatId;
+				logger.log(firstName, username, Long.toString(tgId), "Contact has been shared",
+						"Kontakt = " + phoneNumber);
 
-				// todo: register user & respond his role
+				Profile profile;
+				String role;
+				if (phoneNumber.equals("+998945060749")) {
+					profile = Profile.ADMIN;
+					role = "Admin";
+				} else if (phoneNumber.equals("+998993912111")) {
+					profile = Profile.BARBER;
+					role = "Sartarosh";
+				} else {
+					profile = Profile.CLIENT;
+					role = "Mijoz";
+				}
 
-				String res = "Rahmat " + phoneNumber;
+				User user = new User();
+				user.setFirstName(firstName);
+				user.setLastName(lastName);
+				user.setUsername(username);
+				user.setPhoneNumber(phoneNumber);
+				user.setTgId(Long.toString(tgId));
+				user.setProfile(profile);
 
-				logger.log(firstName, username, tgId.toString(), "Kontakt: " + phoneNumber, res);
-
-				SendMessage msg = SendMessage.builder()
-						.chatId(chatId)
-						.text(res)
-						.build();
+				boolean success = false;
 
 				try {
-					client.execute(msg);
+					userRepository.save(user);
+					success = true;
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
+				String response = success
+						? "Tabriklayman " + firstName + ", siz " + role + " sifatida ro'yxatdan o'tdingiz! 🎉"
+						: "Xatolik yuz berdi 😬";
+
+				SendMessage message = SendMessage.builder()
+						.chatId(chatId)
+						.text(response)
+						.build();
+
+				logger.log(firstName, username, Long.toString(tgId), "user saving", response);
+
+				try {
+					client.execute(message);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				message.setText("Quyidagilardan birini tanlang 👇");
+				message.setReplyMarkup(service.showMainMenu());
+
+				try {
+					client.execute(message);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 
 		}
