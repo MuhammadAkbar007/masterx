@@ -10,4 +10,5 @@ import uz.akbar.masterx.entity.User;
  * UserRepository
  */
 public interface UserRepository extends JpaRepository<User, UUID> {
+	boolean existsByPhoneNumber(String phoneNumber);
 }
