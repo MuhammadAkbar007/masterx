@@ -23,7 +23,7 @@ public class Logger {
 		System.out.println(dateFormat.format(date));
 
 		System.out.println("Message from: " + name + "\n Text: " + txt);
-		System.out.println("Bot answer: \n Text: " + botAnswer);
+		System.out.println("Bot answer: \n Text: " + botAnswer + "\n");
 	}
 
 }

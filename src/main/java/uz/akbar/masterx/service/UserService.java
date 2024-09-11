@@ -16,7 +16,8 @@ public class UserService {
 	@Autowired
 	UserRepository repository;
 
-	public User registerUser(String firstName, String lastName, String username, String phoneNumber, Long tgId) {
+	public User registerUser(String firstName, String lastName, String username, String phoneNumber, Long tgId,
+			Long chatId) {
 		if (repository.existsByPhoneNumber(phoneNumber)) {
 			return null;
 		}
@@ -27,6 +28,7 @@ public class UserService {
 		user.setUsername(username);
 		user.setPhoneNumber(phoneNumber);
 		user.setTgId(Long.toString(tgId));
+		user.setChatId(Long.toString(chatId));
 		user.setProfile(determineProfile(phoneNumber));
 
 		try {
@@ -45,6 +47,10 @@ public class UserService {
 		} else {
 			return Profile.CLIENT;
 		}
+	}
+
+	public boolean existsByChatId(long chatId) {
+		return repository.existsByChatId(Long.toString(chatId));
 	}
 
 }

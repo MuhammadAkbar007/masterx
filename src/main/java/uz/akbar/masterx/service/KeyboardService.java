@@ -3,6 +3,8 @@ package uz.akbar.masterx.service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -11,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+
+import uz.akbar.masterx.enums.Slot;
 
 /**
  * KeyboardService
@@ -75,6 +79,24 @@ public class KeyboardService {
 								.callbackData("dayAfterTomorrow")
 								.build()))
 				.build();
+	}
+
+	public InlineKeyboardMarkup showAvailableTimes(Set<Slot> slots) {
+		InlineKeyboardMarkup.InlineKeyboardMarkupBuilder<?, ?> builder = InlineKeyboardMarkup.builder();
+
+		List<Slot> sortedSlots = slots.stream()
+				.sorted((slot1, slot2) -> slot1.getTimeRange().compareTo(slot2.getTimeRange()))
+				.collect(Collectors.toList());
+
+		for (Slot slot : sortedSlots) {
+			builder.keyboardRow(new InlineKeyboardRow(
+					InlineKeyboardButton.builder()
+							.text(slot.getTimeRange() + " ⏰")
+							.callbackData("book_" + slot.name())
+							.build()));
+		}
+
+		return builder.build();
 	}
 
 }

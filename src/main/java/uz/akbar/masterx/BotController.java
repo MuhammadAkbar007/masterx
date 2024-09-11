@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import uz.akbar.masterx.service.MessageService;
+import uz.akbar.masterx.service.UserService;
 
 /**
  * BotController
@@ -17,6 +18,9 @@ public class BotController {
 
 	@Autowired
 	MessageService messageService;
+
+	@Autowired
+	UserService userService;
 
 	@Autowired
 	Logger logger;
@@ -39,17 +43,34 @@ public class BotController {
 			}
 
 			if (message.hasContact()) {
-				String phoneNumber = message.getContact().getPhoneNumber();
-				logger.log(firstName, "Contact shared!", "Contact = " + phoneNumber);
+				if (!userService.existsByChatId(chatId)) {
+					String phoneNumber = message.getContact().getPhoneNumber();
+					logger.log(firstName, "Contact shared!", "Contact = " + phoneNumber);
 
-				SendMessage sendMsg = messageService.handleContact(chatId, firstName, lastName, username, phoneNumber,
-						tgId);
-				messageService.executeMessage(sendMsg, client);
-				logger.log(firstName, "Register", sendMsg.getText());
+					SendMessage sendMsg = messageService.handleContact(chatId, firstName, lastName, username,
+							phoneNumber,
+							tgId);
+					messageService.executeMessage(sendMsg, client);
+					logger.log(firstName, "Register", sendMsg.getText());
 
-				SendMessage mainMenuMsg = messageService.showMainMenu(chatId);
-				messageService.executeMessage(mainMenuMsg, client);
-				logger.log(firstName, "After registration", "Showing main menu");
+					SendMessage mainMenuMsg = messageService.showMainMenu(chatId);
+					messageService.executeMessage(mainMenuMsg, client);
+					logger.log(firstName, "After registration", "Showing main menu");
+				} else {
+					String response = "Siz allaqachon ro'yxatdan o'tgansiz! ☑️";
+
+					SendMessage sendMsg = SendMessage.builder()
+							.chatId(chatId)
+							.text(response)
+							.build();
+
+					messageService.executeMessage(sendMsg, client);
+					logger.log(firstName, "Contact shared!", response);
+
+					SendMessage showMainMenu = messageService.showMainMenu(chatId);
+					messageService.executeMessage(showMainMenu, client);
+					logger.log(firstName, "Contact shared - continuation", showMainMenu.getText());
+				}
 			}
 
 		}
@@ -57,11 +78,11 @@ public class BotController {
 		if (update.hasCallbackQuery()) {
 			String callbackData = update.getCallbackQuery().getData();
 			Long chatId = update.getCallbackQuery().getMessage().getChatId();
+			String firstName = update.getCallbackQuery().getFrom().getFirstName();
 
 			SendMessage sendMsg = messageService.handleCallback(callbackData, chatId);
 			messageService.executeMessage(sendMsg, client);
-			// TODO:Logger
-			// logger.log(name, txt, botAnswer);
+			logger.log(firstName, callbackData, sendMsg.getText());
 		}
 
 	}

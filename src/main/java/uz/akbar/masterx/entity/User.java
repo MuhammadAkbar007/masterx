@@ -40,6 +40,9 @@ public class User {
 	@Column(nullable = false, unique = true)
 	private String tgId; // required, unique -> 473613511
 
+	@Column(nullable = false, unique = true)
+	private String chatId; // required, unique -> 473613511 (tgUsers' chatId = userId || chatId = tgId)
+
 	@Column(nullable = false)
 	@Enumerated(EnumType.STRING)
 	private Profile profile; // required -> ADMIN || BARBER || CLIENT
@@ -117,5 +120,13 @@ public class User {
 
 	public void setReservation(Reservation reservation) {
 		this.reservation = reservation;
+	}
+
+	public String getChatId() {
+		return chatId;
+	}
+
+	public void setChatId(String chatId) {
+		this.chatId = chatId;
 	}
 }
