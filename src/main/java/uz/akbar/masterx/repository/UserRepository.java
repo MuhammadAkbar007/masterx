@@ -1,5 +1,6 @@
 package uz.akbar.masterx.repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	boolean existsByPhoneNumber(String phoneNumber);
 
 	boolean existsByChatId(String chatId);
+
+	Optional<User> findByChatId(String chatId);
 }

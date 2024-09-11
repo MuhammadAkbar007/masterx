@@ -14,9 +14,9 @@ public class Logger {
 
 	public void log(String name, String txt, String botAnswer) {
 
-		System.out.println("\n--------------------");
-		System.out.println("| *** Log Info *** |");
-		System.out.println("--------------------");
+		System.out.println("\n------------------------");
+		System.out.println("| *** Telegram Log *** |");
+		System.out.println("------------------------");
 
 		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 		Date date = new Date();

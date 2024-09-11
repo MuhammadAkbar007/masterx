@@ -1,5 +1,7 @@
 package uz.akbar.masterx.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -52,5 +54,11 @@ public class UserService {
 	public boolean existsByChatId(long chatId) {
 		return repository.existsByChatId(Long.toString(chatId));
 	}
+
+	public User findByChatId(long chatId) {
+		Optional<User> optional = repository.findByChatId(Long.toString(chatId));
+
+        return optional.orElse(null);
+    }
 
 }

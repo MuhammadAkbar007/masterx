@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import uz.akbar.masterx.entity.Reservation;
 import uz.akbar.masterx.entity.User;
 import uz.akbar.masterx.enums.Slot;
 
@@ -28,9 +28,13 @@ public class MessageService {
 	@Autowired
 	SlotService slotService;
 
+	@Autowired
+	ReservationService reservationService;
+
 	LocalDate today = LocalDate.now();
 	LocalDate tomorrow = today.plusDays(1);
 	LocalDate dayAfterTomorrow = today.plusDays(2);
+	String day = "";
 
 	public SendMessage handleTextMessage(String msg, Long chatId, String firstName) {
 		SendMessage sendMsg;
@@ -46,7 +50,6 @@ public class MessageService {
 				break;
 			case "/book":
 			case "Navbat olish 🙋":
-				// TODO: book a reservation
 				sendMsg = bookReservation(chatId);
 				break;
 			default:
@@ -61,16 +64,16 @@ public class MessageService {
 	}
 
 	public SendMessage handleCallback(String callbackData, long chatId) {
-		// book_SLOT_21
 		if (callbackData.startsWith("book_")) {
-			return bookSlot(chatId, callbackData.substring(5));
+			return slotService.bookSlot(chatId, callbackData.substring(5), slotService.determineDate(day));
 		}
 
 		switch (callbackData) {
 			case "today":
 			case "tomorrow":
 			case "dayAfterTomorrow":
-				return sendSlots(chatId, callbackData);
+				day = callbackData;
+				return sendSlots(chatId, day);
 			default:
 				return SendMessage.builder()
 						.chatId(chatId)
@@ -81,12 +84,10 @@ public class MessageService {
 	}
 
 	public SendMessage createStartMessage(Long chatId, String firstName) {
-		ReplyKeyboardMarkup shareContactKeyboard = keyboardService.shareContactKeyboard();
-
 		return SendMessage.builder()
 				.chatId(chatId)
 				.text("Assalomu alaykum " + firstName + " ! Iltimos, davom etish uchun kontaktingizni kiriting 👇")
-				.replyMarkup(shareContactKeyboard)
+				.replyMarkup(keyboardService.shareContactKeyboard())
 				.build();
 	}
 
@@ -98,14 +99,23 @@ public class MessageService {
 	}
 
 	public SendMessage bookReservation(long chatId) {
+		User user = userService.findByChatId(chatId);
 
-		if (!userService.existsByChatId(chatId)) {
-			ReplyKeyboardMarkup shareContactKeyboard = keyboardService.shareContactKeyboard();
-
+		if (user == null) {
 			return SendMessage.builder()
 					.chatId(chatId)
 					.text("Navbat olish uchun kontaktingizni qoldiring 🤳")
-					.replyMarkup(shareContactKeyboard)
+					.replyMarkup(keyboardService.shareContactKeyboard())
+					.build();
+		}
+
+		Reservation reservation = reservationService.findByClient(user);
+		if (reservation != null) {
+			return SendMessage.builder()
+					.chatId(chatId)
+					.text("Sizda " + reservation.getDate() + " kunda 📆 \n" + reservation.getTime().getTimeRange()
+							+ " vaqtga ⏰ \nnavbat olingan!")
+					.replyMarkup(keyboardService.showMainMenu())
 					.build();
 		}
 
@@ -150,12 +160,10 @@ public class MessageService {
 					.build();
 		}
 
-		InlineKeyboardMarkup showAvailableTimes = keyboardService.showAvailableTimes(availableSlots);
-
 		return SendMessage.builder()
 				.chatId(chatId)
 				.text("O'zingizga qulay vaqtni tanlang ⌚️")
-				.replyMarkup(showAvailableTimes)
+				.replyMarkup(keyboardService.showAvailableTimes(availableSlots))
 				.build();
 	}
 
@@ -165,28 +173,6 @@ public class MessageService {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public SendMessage bookSlot(long chatId, String slotName) {
-		Slot chosenSlot;
-
-		try {
-			chosenSlot = Slot.valueOf(slotName);
-		} catch (Exception e) {
-			return SendMessage.builder()
-					.chatId(chatId)
-					.text("Noto'g'ri vaqt tanlandi! 🙅")
-					.build();
-		}
-
-		// boolean successSave = reservationService.reserve(User client, LocalDate date,
-		// Slot time);
-		String response = ""; // successSave
-
-		return SendMessage.builder()
-				.chatId(chatId)
-				.text(response)
-				.build();
 	}
 
 }
