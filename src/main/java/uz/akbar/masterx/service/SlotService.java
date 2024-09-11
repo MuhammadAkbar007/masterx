@@ -1,10 +1,15 @@
 package uz.akbar.masterx.service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,24 +36,28 @@ public class SlotService {
 
 	public Set<Slot> getAvailableSlots(String day) {
 		LocalDate date = determineDate(day);
-
-		Set<Slot> allSlots = EnumSet.allOf(Slot.class);
+		LocalTime currentTime = LocalTime.now();
 
 		Set<Reservation> reservations = reservationService.findByDate(date);
 
-		Set<Slot> bookedSlots = new HashSet<>();
-		for (Reservation reservation : reservations) {
-			bookedSlots.add(reservation.getTime());
-		}
+		Set<Slot> reservedTimes = reservations.stream()
+				.map(Reservation::getTime)
+				.collect(Collectors.toSet());
 
-		Set<Slot> availableSlots = new HashSet<>();
-		for (Slot slot : allSlots) {
-			if (!bookedSlots.contains(slot)) {
-				availableSlots.add(slot);
-			}
-		}
+		return Arrays.stream(Slot.values())
+				.filter(slot -> {
+					LocalTime slotStartTime = parseSlotStartTime(slot);
+					return (date.isAfter(LocalDate.now()) || slotStartTime.isAfter(currentTime))
+							&& !reservedTimes.contains(slot);
+				})
+				.sorted(Comparator.comparing(slot -> parseSlotStartTime(slot)))
+				.collect(Collectors.toSet());
 
-		return availableSlots;
+	}
+
+	private LocalTime parseSlotStartTime(Slot slot) {
+		String startTime = slot.getTimeRange().split(" - ")[0];
+		return LocalTime.parse(startTime);
 	}
 
 	public SendMessage bookSlot(long chatId, String slotName, LocalDate date) {
@@ -75,9 +84,11 @@ public class SlotService {
 		User client = optionalUser.get();
 
 		boolean successSaved = reservationService.reserve(client, date, chosenSlot);
+
 		String response = successSaved
-				? "Sizni " + date + " kuni 📆 \n" + chosenSlot.getTimeRange()
-						+ " vaqtda ⏰ \n ro'yxatga yozib qo'ydim 🙌"
+				? "Sizni " + date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) + " kuni 📆 \n"
+						+ chosenSlot.getTimeRange()
+						+ " vaqtda ⏰ \nro'yxatga yozib qo'ydim 🙌"
 				: "Xatolik yuz berdi! 🤷";
 
 		return SendMessage.builder()

@@ -1,5 +1,8 @@
 package uz.akbar.masterx.enums;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Slot
  */
@@ -20,6 +23,7 @@ public enum Slot {
 	SLOT_22("22:00 - 23:00");
 
 	private final String timeRange;
+	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
 	Slot(String timeRange) {
 		this.timeRange = timeRange;
@@ -27,5 +31,13 @@ public enum Slot {
 
 	public String getTimeRange() {
 		return timeRange;
+	}
+
+	public LocalTime getStartTime() {
+		return LocalTime.parse(timeRange.split(" - ")[0], formatter);
+	}
+
+	public LocalTime getEndTime() {
+		return LocalTime.parse(timeRange.split(" - ")[1], formatter);
 	}
 }

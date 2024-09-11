@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import uz.akbar.masterx.enums.ReservationStatus;
 import uz.akbar.masterx.enums.Slot;
 
 /**
@@ -34,6 +35,9 @@ public class Reservation {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Slot time;
+
+	@Enumerated(EnumType.STRING)
+	private ReservationStatus status;
 
 	public UUID getId() {
 		return id;
@@ -65,5 +69,13 @@ public class Reservation {
 
 	public void setTime(Slot time) {
 		this.time = time;
+	}
+
+	public ReservationStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(ReservationStatus status) {
+		this.status = status;
 	}
 }

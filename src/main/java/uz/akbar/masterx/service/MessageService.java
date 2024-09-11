@@ -1,6 +1,7 @@
 package uz.akbar.masterx.service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,22 +110,21 @@ public class MessageService {
 					.build();
 		}
 
-		Reservation reservation = reservationService.findByClient(user);
+		Reservation reservation = reservationService.findByClient(user.getId());
 		if (reservation != null) {
 			return SendMessage.builder()
 					.chatId(chatId)
-					.text("Sizda " + reservation.getDate() + " kunda 📆 \n" + reservation.getTime().getTimeRange()
+					.text("Sizda " + reservation.getDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+							+ " kunda 📆 \n" + reservation.getTime().getTimeRange()
 							+ " vaqtga ⏰ \nnavbat olingan!")
 					.replyMarkup(keyboardService.showMainMenu())
 					.build();
 		}
 
-		InlineKeyboardMarkup markup = keyboardService.selectReservationDate(today, tomorrow, dayAfterTomorrow);
-
 		return SendMessage.builder()
 				.chatId(chatId)
 				.text("Qaysi kunga navbat olmoqchisiz? 🤔")
-				.replyMarkup(markup)
+				.replyMarkup(keyboardService.selectReservationDate(today, tomorrow, dayAfterTomorrow))
 				.build();
 	}
 
