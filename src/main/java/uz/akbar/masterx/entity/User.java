@@ -129,4 +129,19 @@ public class User {
 	public void setChatId(String chatId) {
 		this.chatId = chatId;
 	}
+
+	@Override
+	public String toString() {
+		return "User{" +
+				"id=" + id +
+				", createdAt=" + createdAt +
+				", firstName='" + firstName + '\'' +
+				", lastName='" + lastName + '\'' +
+				", username='" + username + '\'' +
+				", phoneNumber='" + phoneNumber + '\'' +
+				", tgId='" + tgId + '\'' +
+				", chatId='" + chatId + '\'' +
+				", profile=" + profile +
+				'}';
+	}
 }

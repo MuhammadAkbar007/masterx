@@ -7,11 +7,11 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import uz.akbar.masterx.entity.Reservation;
 import uz.akbar.masterx.entity.User;
+import uz.akbar.masterx.enums.Profile;
 import uz.akbar.masterx.enums.Slot;
 
 /**
@@ -46,7 +46,6 @@ public class MessageService {
 				break;
 			case "/today":
 			case "Navbatlarni ko'rish 🫣":
-				// TODO: get today's reservations
 				sendMsg = getToday(chatId);
 				break;
 			case "/book":
@@ -75,6 +74,9 @@ public class MessageService {
 			case "dayAfterTomorrow":
 				day = callbackData;
 				return sendSlots(chatId, day);
+			case "tomorrowReservations":
+			case "dayAfterTomorrowReservations":
+				return getTomorrow(chatId, callbackData);
 			default:
 				return SendMessage.builder()
 						.chatId(chatId)
@@ -95,8 +97,60 @@ public class MessageService {
 	public SendMessage getToday(long chatId) {
 		return SendMessage.builder()
 				.chatId(chatId)
-				.text("Bugungi buyurtmalar")
+				.text(getReservationsForAnyDay("today", chatId))
+				.replyMarkup(keyboardService.seeTomorrowReservations())
 				.build();
+	}
+
+	public SendMessage getTomorrow(long chatId, String callbackData) {
+		String day = "";
+
+		if (callbackData.equals("tomorrowReservations")) {
+			day = "tomorrow";
+		} else if (callbackData.equals("dayAfterTomorrowReservations")) {
+			day = "dayAfterTomorrow";
+		}
+
+		return SendMessage.builder()
+				.chatId(chatId)
+				.text(getReservationsForAnyDay(day, chatId))
+				.replyMarkup(keyboardService.showMainMenu())
+				.build();
+	}
+
+	public String getReservationsForAnyDay(String day, long chatId) {
+		StringBuilder result = new StringBuilder();
+		int counter = 1;
+		LocalDate date = LocalDate.now();
+
+		if (day.equals("tomorrow")) {
+			date = date.plusDays(1);
+		} else if (day.equals("dayAfterTomorrow")) {
+			date = date.plusDays(2);
+		}
+
+		Set<Reservation> reservations = reservationService.findByDate(date);
+
+		if (reservations.isEmpty()) {
+			result.append("Bu kun uchun navbat olinmagan! 🙃");
+		} else {
+			for (Reservation reservation : reservations) {
+				String firstName = reservation.getClient().getFirstName();
+				String time = reservation.getTime().getTimeRange();
+
+				result.append(counter).append(". 💇 ").append(firstName).append(" | ⏰ ").append(time);
+
+				User user = userService.findByChatId(chatId);
+				if (user != null && (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER)) {
+					result.append(" | 📞 ").append(reservation.getClient().getPhoneNumber());
+				}
+
+				result.append("\n");
+				counter++;
+			}
+		}
+
+		return result.toString();
 	}
 
 	public SendMessage bookReservation(long chatId) {

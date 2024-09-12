@@ -99,4 +99,19 @@ public class KeyboardService {
 		return builder.build();
 	}
 
+	public InlineKeyboardMarkup seeTomorrowReservations() {
+		return InlineKeyboardMarkup.builder()
+				.keyboardRow(
+						new InlineKeyboardRow(
+								InlineKeyboardButton.builder()
+										.text("Ertagalik")
+										.callbackData("tomorrowReservations")
+										.build(),
+								InlineKeyboardButton.builder()
+										.text("Indingalik")
+										.callbackData("dayAfterTomorrowReservations")
+										.build()))
+				.build();
+	}
+
 }
