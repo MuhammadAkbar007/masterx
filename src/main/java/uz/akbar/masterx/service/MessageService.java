@@ -56,6 +56,7 @@ public class MessageService {
 				sendMsg = SendMessage.builder()
 						.chatId(chatId)
 						.text("Buyruqlardan birini tanlang 👇")
+						.replyMarkup(keyboardService.showMainMenu())
 						.build();
 				break;
 		}
@@ -138,7 +139,7 @@ public class MessageService {
 				String firstName = reservation.getClient().getFirstName();
 				String time = reservation.getTime().getTimeRange();
 
-				result.append(counter).append(". 💇 ").append(firstName).append(" | ⏰ ").append(time);
+				result.append(counter).append(" | 💇 ").append(firstName).append(" | ⏰ ").append(time);
 
 				User user = userService.findByChatId(chatId);
 				if (user != null && (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER)) {
