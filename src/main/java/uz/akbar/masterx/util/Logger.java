@@ -1,4 +1,4 @@
-package uz.akbar.masterx;
+package uz.akbar.masterx.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

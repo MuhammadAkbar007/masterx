@@ -3,7 +3,6 @@ package uz.akbar.masterx.service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -14,6 +13,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import uz.akbar.masterx.entity.Reservation;
+import uz.akbar.masterx.entity.User;
+import uz.akbar.masterx.enums.Profile;
 import uz.akbar.masterx.enums.Slot;
 
 /**
@@ -41,12 +43,17 @@ public class KeyboardService {
 	}
 
 	public ReplyKeyboardMarkup showMainMenu() {
-		KeyboardRow row = new KeyboardRow();
-		row.add(new KeyboardButton("Navbatlarni ko'rish 🫣"));
-		row.add(new KeyboardButton("Navbat olish 🙋"));
+		KeyboardRow row1 = new KeyboardRow();
+		row1.add(new KeyboardButton("Navbatlarni ko'rish 🫣"));
+		row1.add(new KeyboardButton("Navbat olish 🙋"));
+
+		KeyboardRow row2 = new KeyboardRow();
+		row2.add(new KeyboardButton("Navbatni bekor qilish ❌"));
+		row2.add(new KeyboardButton("Navbatlar hisoboti 📈"));
 
 		List<KeyboardRow> keyboard = new ArrayList<>();
-		keyboard.add(row);
+		keyboard.add(row1);
+		keyboard.add(row2);
 
 		return ReplyKeyboardMarkup.builder()
 				.keyboard(keyboard)
@@ -81,7 +88,7 @@ public class KeyboardService {
 				.build();
 	}
 
-	public InlineKeyboardMarkup showAvailableTimes(Set<Slot> slots) {
+	public InlineKeyboardMarkup showAvailableTimes(List<Slot> slots) {
 		InlineKeyboardMarkup.InlineKeyboardMarkupBuilder<?, ?> builder = InlineKeyboardMarkup.builder();
 
 		List<Slot> sortedSlots = slots.stream()
@@ -112,6 +119,36 @@ public class KeyboardService {
 										.callbackData("dayAfterTomorrowReservations")
 										.build()))
 				.build();
+	}
+
+	public InlineKeyboardMarkup deleteReservation(List<Reservation> reservations, User user) {
+		return InlineKeyboardMarkup.builder()
+				.keyboard(reservations.stream()
+						.map(reservation -> new InlineKeyboardRow(
+								InlineKeyboardButton.builder()
+										.text(printSingleReservation(reservation, user) + " ❌")
+										.callbackData("delete_" + reservation.getId())
+										.build()))
+						.toList())
+				.build();
+	}
+
+	public String printSingleReservation(Reservation reservation, User user) {
+		StringBuilder result = new StringBuilder();
+		int counter = 1;
+
+		String firstName = reservation.getClient().getFirstName();
+		String time = reservation.getTime().getTimeRange();
+
+		result.append(counter).append(" | 💇 ").append(firstName).append(" | ⏰ ").append(time);
+
+		if (user != null && (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER)) {
+			result.append(" | 📞 ").append(reservation.getClient().getPhoneNumber());
+		}
+
+		result.append("\n");
+		counter++;
+		return result.toString();
 	}
 
 }

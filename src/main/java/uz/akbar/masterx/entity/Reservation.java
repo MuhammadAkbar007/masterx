@@ -11,7 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import uz.akbar.masterx.enums.ReservationStatus;
 import uz.akbar.masterx.enums.Slot;
 
@@ -25,8 +25,8 @@ public class Reservation {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@OneToOne
-	@JoinColumn(unique = true, nullable = false)
+	@ManyToOne
+	@JoinColumn(nullable = false)
 	private User client;
 
 	@Column(nullable = false)

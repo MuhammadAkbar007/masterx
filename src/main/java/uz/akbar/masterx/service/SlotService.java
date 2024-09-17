@@ -5,10 +5,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +32,15 @@ public class SlotService {
 	@Autowired
 	KeyboardService keyboardService;
 
-	public Set<Slot> getAvailableSlots(String day) {
+	public List<Slot> getAvailableSlots(String day) {
 		LocalDate date = determineDate(day);
 		LocalTime currentTime = LocalTime.now();
 
-		Set<Reservation> reservations = reservationService.findByDate(date);
+		List<Reservation> reservations = reservationService.findByDate(date);
 
-		Set<Slot> reservedTimes = reservations.stream()
+		List<Slot> reservedTimes = reservations.stream()
 				.map(Reservation::getTime)
-				.collect(Collectors.toSet());
+				.collect(Collectors.toList());
 
 		return Arrays.stream(Slot.values())
 				.filter(slot -> {
@@ -51,7 +49,7 @@ public class SlotService {
 							&& !reservedTimes.contains(slot);
 				})
 				.sorted(Comparator.comparing(slot -> parseSlotStartTime(slot)))
-				.collect(Collectors.toSet());
+				.collect(Collectors.toList());
 
 	}
 
@@ -66,6 +64,7 @@ public class SlotService {
 		try {
 			chosenSlot = Slot.valueOf(slotName);
 		} catch (Exception e) {
+			e.printStackTrace();
 			return SendMessage.builder()
 					.chatId(chatId)
 					.text("Noto'g'ri vaqt tanlandi! 🙅")

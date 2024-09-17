@@ -2,7 +2,10 @@ package uz.akbar.masterx.service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.text.DateFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +55,12 @@ public class MessageService {
 			case "Navbat olish 🙋":
 				sendMsg = bookReservation(chatId);
 				break;
+			case "Navbatni bekor qilish ❌":
+				sendMsg = cancelReservation(chatId);
+				break;
+			case "Navbatlar hisoboti 📈":
+				sendMsg = getReports(chatId);
+				break;
 			default:
 				sendMsg = SendMessage.builder()
 						.chatId(chatId)
@@ -67,6 +76,10 @@ public class MessageService {
 	public SendMessage handleCallback(String callbackData, long chatId) {
 		if (callbackData.startsWith("book_")) {
 			return slotService.bookSlot(chatId, callbackData.substring(5), slotService.determineDate(day));
+		}
+
+		if (callbackData.startsWith("delete_")) {
+			return deleteReservation(chatId, callbackData.substring(7));
 		}
 
 		switch (callbackData) {
@@ -85,6 +98,95 @@ public class MessageService {
 						.build();
 		}
 
+	}
+
+	public SendMessage getReports(long chatId) {
+		User user = userService.findByChatId(chatId);
+
+		if (user == null) {
+			return SendMessage.builder()
+					.chatId(chatId)
+					.text("Avval ro'yxatda o'tishingiz kerak. Kontaktingizni qoldiring 📲")
+					.replyMarkup(keyboardService.shareContactKeyboard())
+					.build();
+		}
+
+		List<Reservation> reservations = new ArrayList<>();
+
+		if (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER) {
+			reservations = reservationService.getAllByDate(LocalDate.now());
+		} else if (user.getProfile() == Profile.CLIENT) {
+			reservations = reservationService.getReports(user);
+		}
+
+		if (reservations.isEmpty()) {
+			return SendMessage.builder()
+					.chatId(chatId)
+					.text("Avval ushbu botdan foydalanmagansiz 😮")
+					.replyMarkup(keyboardService.showMainMenu())
+					.build();
+		}
+
+		String result = printReservation(reservations, chatId);
+
+		return SendMessage.builder()
+				.chatId(chatId)
+				.text(result)
+				.replyMarkup(keyboardService.showMainMenu())
+				.build();
+	}
+
+	public SendMessage deleteReservation(long chatId, String id) {
+		String result = reservationService.deleteReservation(id);
+		return SendMessage.builder()
+				.chatId(chatId)
+				.text(result)
+				.replyMarkup(keyboardService.showMainMenu())
+				.build();
+	}
+
+	public SendMessage cancelReservation(Long chatId) {
+		User user = userService.findByChatId(chatId);
+
+		if (user == null) {
+			return SendMessage.builder()
+					.chatId(chatId)
+					.text("Avval ro'yxatdan o'tishingiz kerak! Kontaktingizni qoldiring 👇")
+					.replyMarkup(keyboardService.shareContactKeyboard())
+					.build();
+		}
+
+		Profile profile = user.getProfile();
+
+		List<Reservation> reservations = new ArrayList<>();
+
+		if (profile == Profile.ADMIN || profile == Profile.BARBER) {
+			reservations = reservationService.findAllActives();
+
+			if (reservations.isEmpty())
+				return SendMessage.builder()
+						.chatId(chatId)
+						.text("Navbat yo'q. Bo'm-bo'sh! 🫢")
+						.replyMarkup(keyboardService.showMainMenu())
+						.build();
+
+		} else if (profile == Profile.CLIENT) {
+			Reservation reservation = reservationService.findByClient(user.getId());
+
+			if (reservation == null)
+				return SendMessage.builder().chatId(chatId)
+						.text("Siz hali navbat olmagansiz! 🤨")
+						.replyMarkup(keyboardService.showMainMenu())
+						.build();
+
+			reservations = List.of(reservation);
+		}
+
+		return SendMessage.builder()
+				.chatId(chatId)
+				.text("O'chirmoqchi bo'lganingizni tanlang 👇")
+				.replyMarkup(keyboardService.deleteReservation(reservations, user))
+				.build();
 	}
 
 	public SendMessage createStartMessage(Long chatId, String firstName) {
@@ -120,8 +222,6 @@ public class MessageService {
 	}
 
 	public String getReservationsForAnyDay(String day, long chatId) {
-		StringBuilder result = new StringBuilder();
-		int counter = 1;
 		LocalDate date = LocalDate.now();
 
 		if (day.equals("tomorrow")) {
@@ -130,27 +230,39 @@ public class MessageService {
 			date = date.plusDays(2);
 		}
 
-		Set<Reservation> reservations = reservationService.findByDate(date);
+		List<Reservation> reservations = reservationService.findByDate(date);
 
 		if (reservations.isEmpty()) {
-			result.append("Bu kun uchun navbat olinmagan! 🙃");
+			return "Bu kun uchun navbat olinmagan! 🙃";
 		} else {
-			for (Reservation reservation : reservations) {
-				String firstName = reservation.getClient().getFirstName();
-				String time = reservation.getTime().getTimeRange();
-
-				result.append(counter).append(" | 💇 ").append(firstName).append(" | ⏰ ").append(time);
-
-				User user = userService.findByChatId(chatId);
-				if (user != null && (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER)) {
-					result.append(" | 📞 ").append(reservation.getClient().getPhoneNumber());
-				}
-
-				result.append("\n");
-				counter++;
-			}
+			return printReservation(reservations, chatId);
 		}
 
+	}
+
+	public String printReservation(List<Reservation> reservations, Long chatId) {
+		StringBuilder result = new StringBuilder();
+		int counter = 1;
+
+		for (Reservation reservation : reservations) {
+			String firstName = reservation.getClient().getFirstName();
+			String time = reservation.getTime().getTimeRange();
+			LocalDate date = reservation.getDate();
+			String formattedDate = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+
+			result.append(counter).append(" | 💇 ").append(firstName).append(" | 📆 ").append(formattedDate)
+					.append(" | ⏰ ")
+					.append(time);
+
+			User user = userService.findByChatId(chatId);
+			if (user != null && (user.getProfile() == Profile.ADMIN || user.getProfile() == Profile.BARBER)) {
+				result.append(" | 📞 ").append(reservation.getClient().getPhoneNumber());
+			}
+
+			result.append("\n");
+			counter++;
+			result.append("\n");
+		}
 		return result.toString();
 	}
 
@@ -206,7 +318,7 @@ public class MessageService {
 	}
 
 	public SendMessage sendSlots(long chatId, String day) {
-		Set<Slot> availableSlots = slotService.getAvailableSlots(day);
+		List<Slot> availableSlots = slotService.getAvailableSlots(day);
 
 		if (availableSlots.isEmpty()) {
 			return SendMessage.builder()

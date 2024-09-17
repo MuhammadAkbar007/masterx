@@ -58,7 +58,12 @@ public class UserService {
 	public User findByChatId(long chatId) {
 		Optional<User> optional = repository.findByChatId(Long.toString(chatId));
 
-        return optional.orElse(null);
-    }
+		return optional.orElse(null);
+	}
+
+	public User findBarber(Profile barber) {
+		Optional<User> optional = repository.findByProfile(barber);
+		return optional.orElse(null);
+	}
 
 }

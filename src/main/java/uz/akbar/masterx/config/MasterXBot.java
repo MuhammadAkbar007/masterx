@@ -1,4 +1,4 @@
-package uz.akbar.masterx;
+package uz.akbar.masterx.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import jakarta.annotation.PostConstruct;
+import uz.akbar.masterx.controller.BotController;
 
 /**
  * MasterXBot

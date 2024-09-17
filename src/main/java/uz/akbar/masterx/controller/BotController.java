@@ -1,4 +1,4 @@
-package uz.akbar.masterx;
+package uz.akbar.masterx.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import uz.akbar.masterx.util.Logger;
 import uz.akbar.masterx.service.MessageService;
 import uz.akbar.masterx.service.UserService;
 
@@ -23,7 +24,7 @@ public class BotController {
 	UserService userService;
 
 	@Autowired
-	Logger logger;
+    Logger logger;
 
 	public void handleUpdate(Update update, TelegramClient client) {
 

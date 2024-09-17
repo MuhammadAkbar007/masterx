@@ -1,6 +1,7 @@
 package uz.akbar.masterx.entity;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -10,7 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
 import uz.akbar.masterx.enums.Profile;
 
 /**
@@ -47,8 +48,8 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	private Profile profile; // required -> ADMIN || BARBER || CLIENT
 
-	@OneToOne(mappedBy = "client")
-	private Reservation reservation;
+	@OneToMany(mappedBy = "client")
+	private Set<Reservation> reservations;
 
 	public UUID getId() {
 		return id;
@@ -114,20 +115,20 @@ public class User {
 		this.profile = profile;
 	}
 
-	public Reservation getReservation() {
-		return reservation;
-	}
-
-	public void setReservation(Reservation reservation) {
-		this.reservation = reservation;
-	}
-
 	public String getChatId() {
 		return chatId;
 	}
 
 	public void setChatId(String chatId) {
 		this.chatId = chatId;
+	}
+
+	public Set<Reservation> getReservations() {
+		return reservations;
+	}
+
+	public void setReservations(Set<Reservation> reservations) {
+		this.reservations = reservations;
 	}
 
 	@Override
@@ -144,4 +145,5 @@ public class User {
 				", profile=" + profile +
 				'}';
 	}
+
 }
